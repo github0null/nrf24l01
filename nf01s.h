@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 // Interrupt Pin
-#ifndef NF01S_IRQ_READ()
+#ifndef NF01S_IRQ_READ
 #error "NF01S_IRQ_READ() must be defined !"
 #endif
 
