@@ -306,7 +306,7 @@ uint8_t NF01S_Tx_SendData(NF01S_Buffer buffer)
     NF01S_CS_HIGH();
     NF01S_EN_HIGH();
 
-    while (NF01S_IRQ_Read())
+    while (NF01S_IRQ_READ())
         ;
 
     NF01S_EN_LOW();
@@ -335,7 +335,7 @@ void NF01S_SwitchMode(uint8_t _mode, uint16_t addr)
     NF01S_Rx_SetPipeAddr(0, addr);
     NF01S_Rx_PipeCmd(0, 1);
 
-    if (oldMode & 0x01 == _mode) // if old mode == require mode, refresh addr
+    if ((oldMode & 0x01) == _mode) // if old mode == require mode, refresh addr
     {
         if (_mode == NF01S_CONFIG_MODE_TX)
         {
