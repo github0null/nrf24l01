@@ -306,7 +306,7 @@ uint8_t NF01S_Tx_SendData(NF01S_Buffer buffer)
     NF01S_CS_HIGH();
     NF01S_EN_HIGH();
 
-    while (NF01S_IRQ_READ())
+    while (!NF01S_IsActive_IT())
         ;
 
     NF01S_EN_LOW();

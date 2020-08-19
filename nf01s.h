@@ -27,8 +27,8 @@ extern "C" {
 #endif
 
 // Interrupt Pin
-#ifndef NF01S_IRQ_READ
-#error "NF01S_IRQ_READ() must be defined !"
+#ifndef NF01S_IsActive_IT
+#error "NF01S_IsActive_IT() must be defined !"
 #endif
 
 // inline keyword
