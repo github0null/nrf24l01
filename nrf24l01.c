@@ -104,7 +104,7 @@
 
 #define _ADDR_PREFIX 0xE7E70000U
 
-NRF24L01_WriteByteCallBk _WriteDataCallBk;
+NRF24L01_WriteByteCallBk _SPI_WriteByte;
 
 // ======================== internal function ======================
 
@@ -112,7 +112,7 @@ __STATIC_INLINE uint8_t _WriteCmd(uint8_t cmd)
 {
     uint8_t res;
     NRF24L01_CS_LOW();
-    res = _WriteDataCallBk(cmd);
+    res = _SPI_WriteByte(cmd);
     NRF24L01_CS_HIGH();
     return res;
 }
@@ -120,8 +120,8 @@ __STATIC_INLINE uint8_t _WriteCmd(uint8_t cmd)
 __STATIC_INLINE void _WriteReg(uint8_t addr, uint8_t dat)
 {
     NRF24L01_CS_LOW();
-    _WriteDataCallBk(_WR_OFFSET | addr);
-    _WriteDataCallBk(dat);
+    _SPI_WriteByte(_WR_OFFSET | addr);
+    _SPI_WriteByte(dat);
     NRF24L01_CS_HIGH();
 }
 
@@ -129,8 +129,8 @@ __STATIC_INLINE uint8_t _ReadReg(uint8_t addr)
 {
     uint8_t dat;
     NRF24L01_CS_LOW();
-    _WriteDataCallBk(addr);
-    dat = _WriteDataCallBk(0);
+    _SPI_WriteByte(addr);
+    dat = _SPI_WriteByte(0);
     NRF24L01_CS_HIGH();
     return dat;
 }
@@ -141,7 +141,7 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
 {
     uint8_t i, tmp;
 
-    _WriteDataCallBk = configInfo->writeDataCallBk;
+    _SPI_WriteByte = configInfo->writeDataCallBk;
 
     NRF24L01_EN_LOW(); // disable nrf24l01
 
@@ -169,9 +169,9 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
 
     // reset pipe 1 addr to 0xE7E7E7E7E7
     NRF24L01_CS_LOW();
-    _WriteDataCallBk(_WR_OFFSET + NRF24L01_RX_PIPEx_ADDR_REG(1));
+    _SPI_WriteByte(_WR_OFFSET + NRF24L01_RX_PIPEx_ADDR_REG(1));
     for (i = 0; i < 5; i++)
-        _WriteDataCallBk(0xE7);
+        _SPI_WriteByte(0xE7);
     NRF24L01_CS_HIGH();
 
     // clear all
@@ -189,24 +189,24 @@ uint32_t NRF24L01_Rx_GetPipeAddr(uint8_t pipe_x)
     if (pipe_x < 2)
     {
         NRF24L01_CS_LOW();
-        _WriteDataCallBk(NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
+        _SPI_WriteByte(NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
         for (i = 0; i < 4; i++)
-            addr |= (((uint32_t)_WriteDataCallBk(0)) << (i * 8));
+            addr |= (((uint32_t)_SPI_WriteByte(0)) << (i * 8));
         NRF24L01_CS_HIGH();
     }
     else
     {
         NRF24L01_CS_LOW();
-        _WriteDataCallBk(NRF24L01_RX_PIPEx_ADDR_REG(1));
+        _SPI_WriteByte(NRF24L01_RX_PIPEx_ADDR_REG(1));
         for (i = 0; i < 4; i++)
-            addr |= (((uint32_t)_WriteDataCallBk(0)) << (i * 8));
+            addr |= (((uint32_t)_SPI_WriteByte(0)) << (i * 8));
         NRF24L01_CS_HIGH();
 
         addr &= 0xFFFFFF00;
 
         NRF24L01_CS_LOW();
-        _WriteDataCallBk(NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
-        addr |= _WriteDataCallBk(0);
+        _SPI_WriteByte(NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
+        addr |= _SPI_WriteByte(0);
         NRF24L01_CS_HIGH();
     }
 
@@ -221,10 +221,10 @@ void NRF24L01_Rx_SetPipeAddr(uint8_t pipe_x, uint16_t _addr)
     if (pipe_x < 2)
     {
         NRF24L01_CS_LOW();
-        _WriteDataCallBk(_WR_OFFSET + NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
+        _SPI_WriteByte(_WR_OFFSET + NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
         for (i = 0; i < 4; i++)
         {
-            _WriteDataCallBk((uint8_t)addr);
+            _SPI_WriteByte((uint8_t)addr);
             addr >>= 8;
         }
         NRF24L01_CS_HIGH();
@@ -254,10 +254,10 @@ void NRF24L01_Tx_SetTargetAddr(uint16_t _addr)
     uint32_t addr = _ADDR_PREFIX | _addr;
 
     NRF24L01_CS_LOW();
-    _WriteDataCallBk(_WR_OFFSET + NRF24L01_TX_ADDR_REG);
+    _SPI_WriteByte(_WR_OFFSET + NRF24L01_TX_ADDR_REG);
     for (i = 0; i < 4; i++)
     {
-        _WriteDataCallBk((uint8_t)addr);
+        _SPI_WriteByte((uint8_t)addr);
         addr >>= 8;
     }
     NRF24L01_CS_HIGH();
@@ -269,9 +269,9 @@ uint32_t NRF24L01_Tx_GetTargetAddr(void)
     uint32_t addr = 0x00;
 
     NRF24L01_CS_LOW();
-    _WriteDataCallBk(NRF24L01_TX_ADDR_REG);
+    _SPI_WriteByte(NRF24L01_TX_ADDR_REG);
     for (i = 0; i < 4; i++)
-        addr |= (((uint32_t)_WriteDataCallBk(0)) << (i * 8));
+        addr |= (((uint32_t)_SPI_WriteByte(0)) << (i * 8));
     NRF24L01_CS_HIGH();
 
     return addr;
@@ -296,9 +296,9 @@ int8_t NRF24L01_ReceiveData(NRF24L01_Buffer buffer)
         if (pipex < 6)
         {
             NRF24L01_CS_LOW();
-            _WriteDataCallBk(_FIFO_READ_ADDR);
+            _SPI_WriteByte(_FIFO_READ_ADDR);
             for (status = 0; status < NRF24L01_BUF_SIZE; status++)
-                buffer[status] = _WriteDataCallBk(0);
+                buffer[status] = _SPI_WriteByte(0);
             NRF24L01_CS_HIGH();
         }
         else
@@ -316,9 +316,9 @@ uint8_t NRF24L01_SendData(NRF24L01_Buffer buffer)
     // put data and send
     NRF24L01_EN_LOW();
     NRF24L01_CS_LOW();
-    _WriteDataCallBk(_FIFO_WRITE_ADDR);
+    _SPI_WriteByte(_FIFO_WRITE_ADDR);
     for (status = 0; status < NRF24L01_BUF_SIZE; status++)
-        _WriteDataCallBk(buffer[status]);
+        _SPI_WriteByte(buffer[status]);
     NRF24L01_CS_HIGH();
     NRF24L01_EN_HIGH();
 
