@@ -86,20 +86,20 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *conf);
 void NRF24L01_SwitchMode(uint8_t mode, uint16_t addr);
 
 /**
- * Receive data, blocking mode if use interrupt, otherwise no-blocking mode
+ * Receive a packet. blocking mode if use interrupt, otherwise no-blocking mode
  * 
- * @param buffer data buffer, used to store the received data
+ * @param buffer data buffer, used to store the received packet
  * @return channel id, -1 if receive failed, >= 0 if receive done
 */
-int8_t NRF24L01_ReceiveData(NRF24L01_Buffer buffer);
+int8_t NRF24L01_ReceivePacket(NRF24L01_Buffer buffer);
 
 /**
- * Send data with blocking mode
+ * Send a packet with blocking mode
  * 
- * @param buffer data buffer to send
+ * @param buffer packet to send
  * @return non-zero if send done, otherwise send failed
 */
-uint8_t NRF24L01_SendData(NRF24L01_Buffer buffer);
+uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer);
 
 #ifdef __cplusplus
 }

@@ -277,7 +277,7 @@ uint32_t NRF24L01_Tx_GetTargetAddr(void)
     return addr;
 }
  */
-int8_t NRF24L01_ReceiveData(NRF24L01_Buffer buffer)
+int8_t NRF24L01_ReceivePacket(NRF24L01_Buffer buffer)
 {
     int8_t pipex = -1;
     uint8_t status;
@@ -309,7 +309,7 @@ int8_t NRF24L01_ReceiveData(NRF24L01_Buffer buffer)
     return pipex;
 }
 
-uint8_t NRF24L01_SendData(NRF24L01_Buffer buffer)
+uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
 {
     uint8_t status;
 
