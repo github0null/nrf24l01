@@ -27,10 +27,16 @@ extern "C" {
 #endif
 
 #ifdef NRF24L01_USE_IT
-// Interrupt Pin
-#ifndef NRF24L01_IsActive_IT
-#error "NRF24L01_IsActive_IT() must be defined !"
+
+/**
+ * Check if the interrupt has occurred. if true, must clear the interrupt flag
+ * 
+ * @return return non-zero if interrupt occurred, otherwise not occurred
+*/
+#ifndef NRF24L01_Check_IT_Flag
+#error "NRF24L01_Check_IT_Flag() must be defined !"
 #endif
+
 #endif
 
 // inline keyword

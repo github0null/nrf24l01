@@ -283,7 +283,7 @@ int8_t NRF24L01_ReceivePacket(NRF24L01_Buffer buffer)
     uint8_t status;
 
 #ifdef NRF24L01_USE_IT
-    while (!NRF24L01_IsActive_IT()) // wait send interrupt
+    while (NRF24L01_Check_IT_Flag() == 0) // wait send interrupt
         ;
 #endif
 
@@ -323,7 +323,7 @@ uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
     NRF24L01_EN_HIGH();
 
 #ifdef NRF24L01_USE_IT
-    while (!NRF24L01_IsActive_IT()) // wait send interrupt
+    while (NRF24L01_Check_IT_Flag() == 0) // wait send interrupt
         ;
 #else
     // wait send flag
