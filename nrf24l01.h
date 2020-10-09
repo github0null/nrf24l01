@@ -54,8 +54,8 @@ extern "C" {
 #endif
 
 // auto reply
-#ifndef NRF24L01_DISABLE_AUTO_REPLY
-#define NRF24L01_USE_AUTO_REPLY
+#ifndef NRF24L01_DISABLE_ACK
+#define NRF24L01_USE_ACK
 #endif
 
 //==================== exit code type ====================
