@@ -143,6 +143,7 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
 
     _SPI_WriteByte = configInfo->writeDataCallBk;
 
+    NRF24L01_CS_HIGH(); // disable spi chip select
     NRF24L01_EN_LOW(); // disable nrf24l01
 
 #ifdef NRF24L01_USE_IT
