@@ -87,7 +87,7 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *conf);
  * Switch NRF24L01 to TX or RX Mode
  * 
  * @param mode NRF24L01 mode, like: NRF24L01_MODE_TX
- * @param addr 16 bit address
+ * @param addr target address(mode == NRF24L01_MODE_TX) or self address(mode == NRF24L01_MODE_RX)
 */
 void NRF24L01_SwitchMode(uint8_t mode, uint16_t addr);
 
