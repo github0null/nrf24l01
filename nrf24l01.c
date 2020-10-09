@@ -17,6 +17,8 @@
 #define NRF24L01_CONFIG_MODE_TX 0x00
 #define NRF24L01_CONFIG_MODE_RX 0x01
 
+#define NRF24L01_CONFIG_MODE_MASK 0x01
+
 //--------------------------------------
 
 #define NRF24L01_AUTO_ACK_REG 0x01 // 使能自动ACK, 位[0:5], Enable: 1, Disable: 0
@@ -281,36 +283,39 @@ uint32_t NRF24L01_Tx_GetTargetAddr(void)
     return addr;
 }
  */
-int8_t NRF24L01_ReceivePacket(NRF24L01_Buffer buffer)
+
+void NRF24L01_SwitchMode(uint8_t _mode, uint16_t addr)
 {
-    int8_t pipex = -1;
-    uint8_t status;
+    uint8_t oldMode;
 
-#ifdef NRF24L01_USE_IT
-    while (NRF24L01_Check_IT_Flag() == 0) // wait send interrupt
-        ;
-#endif
+    NRF24L01_EN_LOW(); // disable nrf24l01
 
-    status = _WriteCmd(_CMD_NOP);
-    _WriteReg(NRF24L01_STATUS_REG, status);
+    oldMode = _ReadReg(NRF24L01_CONFIG_REG);
 
-    if (status & NRF24L01_STATUS_RX_DAT_READY)
+    // 要设置接收管道 0 地址与自身发送地址相同，以便接收 ACK 信号
+    NRF24L01_Rx_SetPipeAddr(0, addr);
+    NRF24L01_Rx_PipeCmd(0, 1);
+
+    if ((oldMode & NRF24L01_CONFIG_MODE_MASK) == _mode) // if old mode == require mode, refresh addr
     {
-        pipex = (status & NRF24L01_STATUS_RX_PIPE_NUMBER) >> 1;
-        if (pipex < 6)
+        if (_mode == NRF24L01_CONFIG_MODE_TX)
         {
-            NRF24L01_CS_LOW();
-            _SPI_WriteByte(_FIFO_READ_ADDR);
-            for (status = 0; status < NRF24L01_BUF_SIZE; status++)
-                buffer[status] = _SPI_WriteByte(0);
-            NRF24L01_CS_HIGH();
+            NRF24L01_Tx_SetTargetAddr(addr);
         }
-        else
-            pipex = -1;
-        _WriteCmd(_CMD_FLUSH_RX);
+        return;
     }
 
-    return pipex;
+    if (_mode == NRF24L01_CONFIG_MODE_TX)
+    {
+        NRF24L01_Tx_SetTargetAddr(addr);
+        _WriteReg(NRF24L01_CONFIG_REG, oldMode & 0xFE); // switch to TX mode
+    }
+    else
+    {
+        _WriteReg(NRF24L01_CONFIG_REG, oldMode | NRF24L01_CONFIG_MODE_RX); // switch to RX mode
+        _WriteCmd(_CMD_FLUSH_RX);
+        NRF24L01_EN_HIGH(); // receive mode, enable nrf24l01
+    }
 }
 
 uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
@@ -356,38 +361,31 @@ uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
         return NRF24L01_CODE_FAILED;
 }
 
-void NRF24L01_SwitchMode(uint8_t _mode, uint16_t addr)
+int8_t NRF24L01_ReceivePacket(NRF24L01_Buffer buffer)
 {
-    uint8_t oldMode;
+    int8_t pipex = -1;
+    uint8_t status;
 
-    NRF24L01_EN_LOW(); // disable nrf24l01
+    status = _WriteCmd(_CMD_NOP);
+    _WriteReg(NRF24L01_STATUS_REG, NRF24L01_STATUS_RX_DAT_READY); // clear IT flag
 
-    oldMode = _ReadReg(NRF24L01_CONFIG_REG);
-
-    // 要设置接收管道 0 地址与自身发送地址相同，以便接收 ACK 信号
-    NRF24L01_Rx_SetPipeAddr(0, addr);
-    NRF24L01_Rx_PipeCmd(0, 1);
-
-    if ((oldMode & 0x01) == _mode) // if old mode == require mode, refresh addr
+    if (status & NRF24L01_STATUS_RX_DAT_READY)
     {
-        if (_mode == NRF24L01_CONFIG_MODE_TX)
+        pipex = (status & NRF24L01_STATUS_RX_PIPE_NUMBER) >> 1;
+
+        if (pipex < 6)
         {
-            NRF24L01_Tx_SetTargetAddr(addr);
+            NRF24L01_CS_LOW();
+            _SPI_WriteByte(_FIFO_READ_ADDR);
+            for (status = 0; status < NRF24L01_BUF_SIZE; status++)
+                buffer[status] = _SPI_WriteByte(0);
+            NRF24L01_CS_HIGH();
         }
-        return;
-    }
+        else
+            pipex = -1;
 
-    if (_mode == NRF24L01_CONFIG_MODE_TX)
-    {
-        NRF24L01_Tx_SetTargetAddr(addr);
-        _WriteReg(NRF24L01_CONFIG_REG, oldMode & 0xFE);
-    }
-    else
-    {
-        _WriteReg(NRF24L01_CONFIG_REG, oldMode | NRF24L01_CONFIG_MODE_RX);
-        _WriteReg(NRF24L01_STATUS_REG, 0xFF);
         _WriteCmd(_CMD_FLUSH_RX);
-
-        NRF24L01_EN_HIGH(); // receive mode, enable nrf24l01
     }
+
+    return pipex;
 }
