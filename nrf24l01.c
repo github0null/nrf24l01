@@ -186,39 +186,7 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
     else
         return NRF24L01_CODE_FAILED;
 }
-/* 
-uint32_t NRF24L01_Rx_GetPipeAddr(uint8_t pipe_x)
-{
-    uint8_t i;
-    uint32_t addr = 0x00;
 
-    if (pipe_x < 2)
-    {
-        NRF24L01_CS_LOW();
-        _SPI_WriteByte(NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
-        for (i = 0; i < 4; i++)
-            addr |= (((uint32_t)_SPI_WriteByte(0)) << (i * 8));
-        NRF24L01_CS_HIGH();
-    }
-    else
-    {
-        NRF24L01_CS_LOW();
-        _SPI_WriteByte(NRF24L01_RX_PIPEx_ADDR_REG(1));
-        for (i = 0; i < 4; i++)
-            addr |= (((uint32_t)_SPI_WriteByte(0)) << (i * 8));
-        NRF24L01_CS_HIGH();
-
-        addr &= 0xFFFFFF00;
-
-        NRF24L01_CS_LOW();
-        _SPI_WriteByte(NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
-        addr |= _SPI_WriteByte(0);
-        NRF24L01_CS_HIGH();
-    }
-
-    return addr;
-}
- */
 void NRF24L01_Rx_SetPipeAddr(uint8_t pipe_x, uint16_t _addr)
 {
     uint8_t i;
@@ -245,9 +213,11 @@ void NRF24L01_Rx_PipeCmd(uint8_t pipe_x, uint8_t state)
 {
     uint8_t oldConfig;
 
+#ifdef NRF24L01_USE_AUTO_REPLY
     oldConfig = _ReadReg(NRF24L01_AUTO_ACK_REG);
     oldConfig = state ? ((1 << pipe_x) | oldConfig) : ((~(1 << pipe_x)) & oldConfig);
     _WriteReg(NRF24L01_AUTO_ACK_REG, oldConfig);
+#endif // NRF24L01_USE_AUTO_REPLY
 
     oldConfig = _ReadReg(NRF24L01_RX_PIPE_EN_REG);
     oldConfig = state ? ((1 << pipe_x) | oldConfig) : ((~(1 << pipe_x)) & oldConfig);
@@ -268,21 +238,6 @@ void NRF24L01_Tx_SetTargetAddr(uint16_t _addr)
     }
     NRF24L01_CS_HIGH();
 }
-/* 
-uint32_t NRF24L01_Tx_GetTargetAddr(void)
-{
-    uint8_t i;
-    uint32_t addr = 0x00;
-
-    NRF24L01_CS_LOW();
-    _SPI_WriteByte(NRF24L01_TX_ADDR_REG);
-    for (i = 0; i < 4; i++)
-        addr |= (((uint32_t)_SPI_WriteByte(0)) << (i * 8));
-    NRF24L01_CS_HIGH();
-
-    return addr;
-}
- */
 
 void NRF24L01_SwitchMode(uint8_t _mode, uint16_t addr)
 {
@@ -292,11 +247,14 @@ void NRF24L01_SwitchMode(uint8_t _mode, uint16_t addr)
 
     oldMode = _ReadReg(NRF24L01_CONFIG_REG);
 
-    // 要设置接收管道 0 地址与自身发送地址相同，以便接收 ACK 信号
+#ifdef NRF24L01_USE_AUTO_REPLY
+    // set pipe_0 addr == self rx addr to receive reply signal
     NRF24L01_Rx_SetPipeAddr(0, addr);
     NRF24L01_Rx_PipeCmd(0, 1);
+#endif // !NRF24L01_USE_AUTO_REPLY
 
-    if ((oldMode & NRF24L01_CONFIG_MODE_MASK) == _mode) // if old mode == require mode, refresh addr
+    // if old mode == require mode, only refresh addr
+    if ((oldMode & NRF24L01_CONFIG_MODE_MASK) == _mode)
     {
         if (_mode == NRF24L01_CONFIG_MODE_TX)
         {
@@ -307,11 +265,17 @@ void NRF24L01_SwitchMode(uint8_t _mode, uint16_t addr)
 
     if (_mode == NRF24L01_CONFIG_MODE_TX)
     {
+#ifndef NRF24L01_USE_AUTO_REPLY
+        NRF24L01_Rx_PipeCmd(0, 0);
+#endif
         NRF24L01_Tx_SetTargetAddr(addr);
         _WriteReg(NRF24L01_CONFIG_REG, oldMode & 0xFE); // switch to TX mode
     }
     else
     {
+#ifndef NRF24L01_USE_AUTO_REPLY
+        NRF24L01_Rx_PipeCmd(0, 1);
+#endif
         _WriteReg(NRF24L01_CONFIG_REG, oldMode | NRF24L01_CONFIG_MODE_RX); // switch to RX mode
         _WriteCmd(_CMD_FLUSH_RX);
         NRF24L01_EN_HIGH(); // receive mode, enable nrf24l01

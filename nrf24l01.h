@@ -53,6 +53,11 @@ extern "C" {
 #define NRF24L01_MAX_TIMEOUT 600
 #endif
 
+// auto reply
+#ifndef NRF24L01_DISABLE_AUTO_REPLY
+#define NRF24L01_USE_AUTO_REPLY
+#endif
+
 //==================== exit code type ====================
 
 #define NRF24L01_CODE_DONE 0
@@ -109,7 +114,7 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *conf);
 void NRF24L01_SwitchMode(uint8_t mode, uint16_t addr);
 
 /**
- * Receive a packet. blocking mode if use interrupt, otherwise no-blocking mode
+ * Receive a packet with no-blocking mode
  * 
  * @param buffer data buffer, used to store the received packet
  * @return channel id, -1 if receive failed, >= 0 if receive done
