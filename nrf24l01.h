@@ -8,6 +8,8 @@ extern "C" {
 #include <stdint.h>
 #include <nrf24l01_conf.h>
 
+//==================== user interface ====================
+
 // SPI Chip Select
 #ifndef NRF24L01_CS_HIGH
 #error "NRF24L01_CS_HIGH() must be defined !"
@@ -39,10 +41,25 @@ extern "C" {
 
 #endif
 
+//==================== global config ====================
+
 // inline keyword
 #ifndef __STATIC_INLINE
 #define __STATIC_INLINE
 #endif
+
+// wait timeout
+#ifndef NRF24L01_MAX_TIMEOUT
+#define NRF24L01_MAX_TIMEOUT 600
+#endif
+
+//==================== exit code type ====================
+
+#define NRF24L01_CODE_DONE 0
+#define NRF24L01_CODE_FAILED 1
+#define NRF24L01_CODE_TIMEOUT 2
+
+//==================== init config options ====================
 
 // 数据传输速度
 #define NRF24L01_SPEED_1Mbps 0x00
@@ -60,7 +77,7 @@ extern "C" {
 #define NRF24L01_MODE_TX 0x00
 #define NRF24L01_MODE_RX 0x01
 
-// --
+//==================== type define ====================
 
 typedef uint8_t (*NRF24L01_WriteByteCallBk)(uint8_t);
 
@@ -79,7 +96,7 @@ typedef struct
  * Initialize NRF24L01
  * 
  * @param conf NRF24L01 init config
- * @return non-zero if init done, otherwise init failed
+ * @return NRF24L01_CODE_DONE if init done, otherwise init failed
 */
 uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *conf);
 
@@ -103,7 +120,7 @@ int8_t NRF24L01_ReceivePacket(NRF24L01_Buffer buffer);
  * Send a packet with blocking mode
  * 
  * @param buffer packet to send
- * @return non-zero if send done, otherwise send failed
+ * @return NRF24L01_CODE_DONE if send done, otherwise send failed
 */
 uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer);
 

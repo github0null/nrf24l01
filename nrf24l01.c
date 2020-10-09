@@ -144,7 +144,7 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
     _SPI_WriteByte = configInfo->writeDataCallBk;
 
     NRF24L01_CS_HIGH(); // disable spi chip select
-    NRF24L01_EN_LOW(); // disable nrf24l01
+    NRF24L01_EN_LOW();  // disable nrf24l01
 
 #ifdef NRF24L01_USE_IT
     tmp = NRF24L01_CONFIG_IT_RX_EN | NRF24L01_CONFIG_IT_TX_EN | NRF24L01_CONFIG_IT_MAX_RT_EN |
@@ -179,7 +179,10 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
     _WriteCmd(_CMD_FLUSH_RX);
     _WriteCmd(_CMD_FLUSH_TX);
 
-    return _ReadReg(NRF24L01_CONFIG_REG) == tmp; // check if config done !
+    if (_ReadReg(NRF24L01_CONFIG_REG) == tmp) // check if config done !
+        return NRF24L01_CODE_DONE;
+    else
+        return NRF24L01_CODE_FAILED;
 }
 /* 
 uint32_t NRF24L01_Rx_GetPipeAddr(uint8_t pipe_x)
@@ -313,6 +316,7 @@ int8_t NRF24L01_ReceivePacket(NRF24L01_Buffer buffer)
 uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
 {
     uint8_t status;
+    uint16_t timeout = 0;
 
     // put data and send
     NRF24L01_EN_LOW();
@@ -324,21 +328,32 @@ uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
     NRF24L01_EN_HIGH();
 
 #ifdef NRF24L01_USE_IT
-    while (NRF24L01_Check_IT_Flag() == 0) // wait send interrupt
-        ;
+    // wait send interrupt
+    while (NRF24L01_Check_IT_Flag() == 0)
 #else
     // wait send flag
     while ((_WriteCmd(_CMD_NOP) & NRF24L01_STATUS_TX_SEND_DONE_OR_FAILED_MASK) == 0)
-        ;
 #endif
+    {
+        if (++timeout >= NRF24L01_MAX_TIMEOUT)
+        {
+            NRF24L01_EN_LOW();                                   // disable nrf24l01
+            _WriteReg(NRF24L01_STATUS_REG, _WriteCmd(_CMD_NOP)); // clear flag
+            _WriteCmd(_CMD_FLUSH_TX);                            // clear tx fifo
+            return NRF24L01_CODE_TIMEOUT;
+        }
+    }
 
     NRF24L01_EN_LOW(); // disable nrf24l01
 
     status = _WriteCmd(_CMD_NOP);
-    _WriteReg(NRF24L01_STATUS_REG, status);
+    _WriteReg(NRF24L01_STATUS_REG, status); // clear flag
+    _WriteCmd(_CMD_FLUSH_TX);               // clear tx fifo
 
-    _WriteCmd(_CMD_FLUSH_TX); // clear tx fifo
-    return status & NRF24L01_STATUS_TX_SEND_DONE;
+    if (status & NRF24L01_STATUS_TX_SEND_DONE)
+        return NRF24L01_CODE_DONE;
+    else
+        return NRF24L01_CODE_FAILED;
 }
 
 void NRF24L01_SwitchMode(uint8_t _mode, uint16_t addr)
