@@ -367,7 +367,7 @@ int8_t NRF24L01_ReceivePacket(NRF24L01_Buffer buffer)
     uint8_t status;
 
     status = _WriteCmd(_CMD_NOP);
-    _WriteReg(NRF24L01_STATUS_REG, NRF24L01_STATUS_RX_DAT_READY); // clear IT flag
+    _WriteReg(NRF24L01_STATUS_REG, status); // clear IT flag
 
     if (status & NRF24L01_STATUS_RX_DAT_READY)
     {
