@@ -168,7 +168,7 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
 
     // set data width
     for (i = 0; i < 6; i++)
-        _WriteReg(NRF24L01_RX_PIPEx_WIDTH_REG(i), 32);
+        _WriteReg(NRF24L01_RX_PIPEx_WIDTH_REG(i), NRF24L01_PACKET_SIZE);
 
     // reset pipe 1 addr to 0xE7E7E7E7E7
     NRF24L01_CS_LOW();
@@ -284,15 +284,15 @@ void NRF24L01_SwitchMode(uint8_t _mode, uint16_t addr)
 
 uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
 {
-    uint8_t status;
+    uint8_t tmp;
     uint16_t timeout = 0;
 
     // put data and send
     NRF24L01_EN_LOW();
     NRF24L01_CS_LOW();
     _SPI_WriteByte(_FIFO_WRITE_ADDR);
-    for (status = 0; status < NRF24L01_BUF_SIZE; status++)
-        _SPI_WriteByte(buffer[status]);
+    for (tmp = 0; tmp < NRF24L01_PACKET_SIZE; tmp++)
+        _SPI_WriteByte(buffer[tmp]);
     NRF24L01_CS_HIGH();
     NRF24L01_EN_HIGH();
 
@@ -315,11 +315,11 @@ uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
 
     NRF24L01_EN_LOW(); // disable nrf24l01
 
-    status = _WriteCmd(_CMD_NOP);
-    _WriteReg(NRF24L01_STATUS_REG, status); // clear flag
+    tmp = _WriteCmd(_CMD_NOP);
+    _WriteReg(NRF24L01_STATUS_REG, tmp); // clear flag
     _WriteCmd(_CMD_FLUSH_TX);               // clear tx fifo
 
-    if (status & NRF24L01_STATUS_TX_SEND_DONE)
+    if (tmp & NRF24L01_STATUS_TX_SEND_DONE)
         return NRF24L01_CODE_DONE;
     else
         return NRF24L01_CODE_FAILED;
@@ -328,21 +328,21 @@ uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
 int8_t NRF24L01_ReceivePacket(NRF24L01_Buffer buffer)
 {
     int8_t pipex = -1;
-    uint8_t status;
+    uint8_t tmp;
 
-    status = _WriteCmd(_CMD_NOP);
-    _WriteReg(NRF24L01_STATUS_REG, status); // clear IT flag
+    tmp = _WriteCmd(_CMD_NOP);
+    _WriteReg(NRF24L01_STATUS_REG, tmp); // clear IT flag
 
-    if (status & NRF24L01_STATUS_RX_DAT_READY)
+    if (tmp & NRF24L01_STATUS_RX_DAT_READY)
     {
-        pipex = (status & NRF24L01_STATUS_RX_PIPE_NUMBER) >> 1;
+        pipex = (tmp & NRF24L01_STATUS_RX_PIPE_NUMBER) >> 1;
 
         if (pipex < 6)
         {
             NRF24L01_CS_LOW();
             _SPI_WriteByte(_FIFO_READ_ADDR);
-            for (status = 0; status < NRF24L01_BUF_SIZE; status++)
-                buffer[status] = _SPI_WriteByte(0);
+            for (tmp = 0; tmp < NRF24L01_PACKET_SIZE; tmp++)
+                buffer[tmp] = _SPI_WriteByte(0);
             NRF24L01_CS_HIGH();
         }
         else

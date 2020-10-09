@@ -53,9 +53,14 @@ extern "C" {
 #define NRF24L01_MAX_TIMEOUT 600
 #endif
 
-// auto reply
+// auto ack, default state is enable
 #ifndef NRF24L01_DISABLE_ACK
 #define NRF24L01_USE_ACK
+#endif
+
+// transfer packet size, range: 1 ~ 32
+#ifndef NRF24L01_PACKET_SIZE
+#define NRF24L01_PACKET_SIZE 32
 #endif
 
 //==================== exit code type ====================
@@ -86,8 +91,7 @@ extern "C" {
 
 typedef uint8_t (*NRF24L01_WriteByteCallBk)(uint8_t);
 
-#define NRF24L01_BUF_SIZE 32 // must be 32. can't modify it
-typedef uint8_t NRF24L01_Buffer[NRF24L01_BUF_SIZE];
+typedef uint8_t NRF24L01_Buffer[NRF24L01_PACKET_SIZE];
 
 typedef struct
 {
