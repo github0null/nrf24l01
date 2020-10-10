@@ -157,18 +157,18 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
 #ifdef NRF24L01_USE_IT
     tmp = NRF24L01_CONFIG_IT_RX_EN | NRF24L01_CONFIG_IT_TX_EN | NRF24L01_CONFIG_IT_MAX_RT_EN |
           NRF24L01_CONFIG_CRC_LEN_2BYTE | NRF24L01_CONFIG_CRC_EN |
-          NRF24L01_CONFIG_PWR_EN; // 开启中断, 开启 16位 CRC, 电源, 进入待机模式
+          NRF24L01_CONFIG_PWR_EN; // enable IT, 16bit CRC, power, go to standby mode
 #else
     tmp = NRF24L01_CONFIG_IT_RX_DIS | NRF24L01_CONFIG_IT_TX_DIS | NRF24L01_CONFIG_IT_MAX_RT_DIS |
           NRF24L01_CONFIG_CRC_LEN_2BYTE | NRF24L01_CONFIG_CRC_EN |
-          NRF24L01_CONFIG_PWR_EN; // 关闭中断, 开启 16位 CRC, 电源, 进入待机模式
+          NRF24L01_CONFIG_PWR_EN; // disable IT, enable 16bit CRC, power, go to standby mode
 #endif
 
     _WriteReg(NRF24L01_CONFIG_REG, tmp);                                                          // config nrf24l01
-    _WriteReg(NRF24L01_ADDR_WIDTH_REG, NRF24L01_ADDR_WIDTH_5BYTE);                                // 地址宽度 5 byte
-    _WriteReg(NRF24L01_AUTO_ACK_REG, 0x00);                                                       // 关闭所有自动应答
-    _WriteReg(NRF24L01_RX_PIPE_EN_REG, 0x00);                                                     // 关闭所有管道
-    _WriteReg(NRF24L01_RETRY_CONFIG_REG, (configInfo->retryDelay << 4) | configInfo->retryTimes); // 设置重发配置
+    _WriteReg(NRF24L01_ADDR_WIDTH_REG, NRF24L01_ADDR_WIDTH_5BYTE);                                // addr width 5 byte
+    _WriteReg(NRF24L01_AUTO_ACK_REG, 0x00);                                                       // close all ack
+    _WriteReg(NRF24L01_RX_PIPE_EN_REG, 0x00);                                                     // close all pipe
+    _WriteReg(NRF24L01_RETRY_CONFIG_REG, (configInfo->retryDelay << 4) | configInfo->retryTimes); // reset retry config
     _WriteReg(NRF24L01_RF_CHANNAL_REG, configInfo->channelOffset);
     _WriteReg(NRF24L01_RF_CONFIG_REG, configInfo->transferSpeed | configInfo->transferPower);
 
@@ -184,6 +184,11 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
         return NRF24L01_CODE_DONE;
     else
         return NRF24L01_CODE_FAILED;
+}
+
+uint8_t NRF24L01_GetRSSI()
+{
+    return _ReadReg(NRF24L01_SIGNAL_STRENGTH_REG);
 }
 
 void NRF24L01_Tx_SetTargetAddr(uint16_t _addr)

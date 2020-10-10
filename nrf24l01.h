@@ -58,7 +58,7 @@ extern "C" {
 #define NRF24L01_USE_ACK
 #endif
 
-// transfer packet size, range: 1 ~ 32
+// transmission packet size, range: 1 ~ 32
 #ifndef NRF24L01_PACKET_SIZE
 #define NRF24L01_PACKET_SIZE 32
 #endif
@@ -71,19 +71,19 @@ extern "C" {
 
 //==================== init config options ====================
 
-// 数据传输速度
+// transmission speed
 #define NRF24L01_SPEED_1Mbps 0x00
 #define NRF24L01_SPEED_2Mbps 0x08
 #define NRF24L01_SPEED_250Kbps 0x20
 
-// 发射功率
+// transmission power
 #define NRF24L01_PWR_7dBm 0x07
 #define NRF24L01_PWR_4dBm 0x06
 #define NRF24L01_PWR_3dBm 0x05
 #define NRF24L01_PWR_1dBm 0x04
 #define NRF24L01_PWR_0dBm 0x03
 
-// 工作模式
+// work mode
 #define NRF24L01_MODE_TX 0x00
 #define NRF24L01_MODE_RX 0x01
 
@@ -95,12 +95,12 @@ typedef uint8_t NRF24L01_Buffer[NRF24L01_PACKET_SIZE];
 
 typedef struct
 {
-    uint8_t channelOffset;    // 发射频段偏移, 0~125, 对应 2400MHz~2525MHz
-    uint8_t transferSpeed;    // 传输速度, NRF24L01_SPEED_...
-    uint8_t transferPower;    // 发射功率, NRF24L01_PWR_...
-    uint8_t retryDelay;       // 重发延迟, 0~15, 延时时间: 250us * (retryDelay + 1)
-    uint8_t retryTimes;       // 重发次数, 0~15 次
-    uint16_t networkId;       // 局域网络 ID, 用于区分不同的网络
+    uint8_t channelOffset;    // frequency offset. range: 0~125 (2400MHz~2525MHz)
+    uint8_t transferSpeed;    // transmission speed. ref: NRF24L01_SPEED_...
+    uint8_t transferPower;    // transmission power. ref: NRF24L01_PWR_...
+    uint8_t retryDelay;       // retransmission delay. range: 0~15, delay time: 250us * (retryDelay + 1)
+    uint8_t retryTimes;       // retransmission times. range: 0~15 times
+    uint16_t networkId;       // network ID. Used to identify different networks
     NRF24L01_WriteByteCallBk writeDataCallBk;
 } NRF24L01_InitTypeDef;
 
@@ -111,6 +111,13 @@ typedef struct
  * @return NRF24L01_CODE_DONE if init done, otherwise init failed
 */
 uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *conf);
+
+/**
+ * receive signal strength detection, less than -60dbm is 0, otherwise it is 1
+ * 
+ * @return RSSI value
+*/
+uint8_t NRF24L01_GetRSSI(void);
 
 /**
  * Switch NRF24L01 to TX or RX Mode
