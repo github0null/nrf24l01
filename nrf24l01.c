@@ -104,9 +104,10 @@
 #define _FIFO_WRITE_ADDR 0xA0
 #define _FIFO_READ_ADDR 0x61
 
-#define _ADDR_PREFIX 0xE7E70000U
-
 NRF24L01_WriteByteCallBk _SPI_WriteByte;
+uint32_t _addr_prefix;
+
+#define _ADDR_PREFIX _addr_prefix
 
 // ======================== internal function ======================
 
@@ -141,9 +142,13 @@ __STATIC_INLINE uint8_t _ReadReg(uint8_t addr)
 
 uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
 {
-    uint8_t i, tmp;
+    int8_t i;
+    uint8_t tmp;
 
     _SPI_WriteByte = configInfo->writeDataCallBk;
+    _addr_prefix = ((uint32_t)configInfo->netId) << 16;
+    configInfo->retryDelay &= 0x0f;
+    configInfo->retryTimes &= 0x0f;
 
     NRF24L01_CS_HIGH(); // disable spi chip select
     NRF24L01_EN_LOW();  // disable nrf24l01
@@ -158,24 +163,17 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
           NRF24L01_CONFIG_PWR_EN; // 关闭中断, 开启 16位 CRC, 电源, 进入待机模式
 #endif
 
-    _WriteReg(NRF24L01_CONFIG_REG, tmp);                           // config nrf24l01
-    _WriteReg(NRF24L01_ADDR_WIDTH_REG, NRF24L01_ADDR_WIDTH_4BYTE); // 地址宽度 4 byte
-    _WriteReg(NRF24L01_AUTO_ACK_REG, 0x00);                        // 关闭所有自动应答
-    _WriteReg(NRF24L01_RX_PIPE_EN_REG, 0x00);                      // 关闭所有管道
-    _WriteReg(NRF24L01_RETRY_CONFIG_REG, 0x02);                    // 重发延迟 250us, 2 次, 500us
-    _WriteReg(NRF24L01_RF_CHANNAL_REG, configInfo->RF_ChannalOffset);
+    _WriteReg(NRF24L01_CONFIG_REG, tmp);                                                          // config nrf24l01
+    _WriteReg(NRF24L01_ADDR_WIDTH_REG, NRF24L01_ADDR_WIDTH_4BYTE);                                // 地址宽度 4 byte
+    _WriteReg(NRF24L01_AUTO_ACK_REG, 0x00);                                                       // 关闭所有自动应答
+    _WriteReg(NRF24L01_RX_PIPE_EN_REG, 0x00);                                                     // 关闭所有管道
+    _WriteReg(NRF24L01_RETRY_CONFIG_REG, (configInfo->retryDelay << 4) | configInfo->retryTimes); // 设置重发配置
+    _WriteReg(NRF24L01_RF_CHANNAL_REG, configInfo->channelOffset);
     _WriteReg(NRF24L01_RF_CONFIG_REG, configInfo->transferSpeed | configInfo->transferPower);
 
     // set data width
     for (i = 0; i < 6; i++)
         _WriteReg(NRF24L01_RX_PIPEx_WIDTH_REG(i), NRF24L01_PACKET_SIZE);
-
-    // reset pipe 1 addr to 0xE7E7E7E7E7
-    NRF24L01_CS_LOW();
-    _SPI_WriteByte(_WR_OFFSET + NRF24L01_RX_PIPEx_ADDR_REG(1));
-    for (i = 0; i < 5; i++)
-        _SPI_WriteByte(0xE7);
-    NRF24L01_CS_HIGH();
 
     // clear all
     _WriteCmd(_CMD_FLUSH_RX);
@@ -187,20 +185,31 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
         return NRF24L01_CODE_FAILED;
 }
 
+void NRF24L01_Tx_SetTargetAddr(uint16_t _addr)
+{
+    uint32_t addr = _ADDR_PREFIX | _addr;
+
+    NRF24L01_CS_LOW();
+    _SPI_WriteByte(_WR_OFFSET + NRF24L01_TX_ADDR_REG);
+    _SPI_WriteByte(((uint8_t *)&addr)[3]);
+    _SPI_WriteByte(((uint8_t *)&addr)[2]);
+    _SPI_WriteByte(((uint8_t *)&addr)[1]);
+    _SPI_WriteByte(((uint8_t *)&addr)[0]);
+    NRF24L01_CS_HIGH();
+}
+
 void NRF24L01_Rx_SetPipeAddr(uint8_t pipe_x, uint16_t _addr)
 {
-    uint8_t i;
     uint32_t addr = _ADDR_PREFIX | _addr;
 
     if (pipe_x < 2)
     {
         NRF24L01_CS_LOW();
         _SPI_WriteByte(_WR_OFFSET + NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
-        for (i = 0; i < 4; i++)
-        {
-            _SPI_WriteByte((uint8_t)addr);
-            addr >>= 8;
-        }
+        _SPI_WriteByte(((uint8_t *)&addr)[3]);
+        _SPI_WriteByte(((uint8_t *)&addr)[2]);
+        _SPI_WriteByte(((uint8_t *)&addr)[1]);
+        _SPI_WriteByte(((uint8_t *)&addr)[0]);
         NRF24L01_CS_HIGH();
     }
     else
@@ -222,21 +231,6 @@ void NRF24L01_Rx_PipeCmd(uint8_t pipe_x, uint8_t state)
     oldConfig = _ReadReg(NRF24L01_RX_PIPE_EN_REG);
     oldConfig = state ? ((1 << pipe_x) | oldConfig) : ((~(1 << pipe_x)) & oldConfig);
     _WriteReg(NRF24L01_RX_PIPE_EN_REG, oldConfig);
-}
-
-void NRF24L01_Tx_SetTargetAddr(uint16_t _addr)
-{
-    uint8_t i;
-    uint32_t addr = _ADDR_PREFIX | _addr;
-
-    NRF24L01_CS_LOW();
-    _SPI_WriteByte(_WR_OFFSET + NRF24L01_TX_ADDR_REG);
-    for (i = 0; i < 4; i++)
-    {
-        _SPI_WriteByte((uint8_t)addr);
-        addr >>= 8;
-    }
-    NRF24L01_CS_HIGH();
 }
 
 void NRF24L01_SwitchMode(uint8_t _mode, uint16_t addr)
@@ -317,7 +311,7 @@ uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
 
     tmp = _WriteCmd(_CMD_NOP);
     _WriteReg(NRF24L01_STATUS_REG, tmp); // clear flag
-    _WriteCmd(_CMD_FLUSH_TX);               // clear tx fifo
+    _WriteCmd(_CMD_FLUSH_TX);            // clear tx fifo
 
     if (tmp & NRF24L01_STATUS_TX_SEND_DONE)
         return NRF24L01_CODE_DONE;

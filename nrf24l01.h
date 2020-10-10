@@ -95,9 +95,12 @@ typedef uint8_t NRF24L01_Buffer[NRF24L01_PACKET_SIZE];
 
 typedef struct
 {
-    uint8_t RF_ChannalOffset; // 发射频段偏移, 0~125, 对应 2400MHz~2525MHz
+    uint8_t channelOffset;    // 发射频段偏移, 0~125, 对应 2400MHz~2525MHz
     uint8_t transferSpeed;    // 传输速度, NRF24L01_SPEED_...
     uint8_t transferPower;    // 发射功率, NRF24L01_PWR_...
+    uint8_t retryDelay;       // 重发延迟, 0~15, 延时时间: 250us * (retryDelay + 1)
+    uint8_t retryTimes;       // 重发次数, 0~15 次
+    uint16_t netId;           // 局域网络 ID, 用于区分不同的网络
     NRF24L01_WriteByteCallBk writeDataCallBk;
 } NRF24L01_InitTypeDef;
 
