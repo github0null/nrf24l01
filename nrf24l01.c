@@ -191,10 +191,10 @@ void NRF24L01_Tx_SetTargetAddr(uint16_t _addr)
 
     NRF24L01_CS_LOW();
     _SPI_WriteByte(_WR_OFFSET + NRF24L01_TX_ADDR_REG);
-    _SPI_WriteByte(((uint8_t *)&addr)[3]);
-    _SPI_WriteByte(((uint8_t *)&addr)[2]);
-    _SPI_WriteByte(((uint8_t *)&addr)[1]);
-    _SPI_WriteByte(((uint8_t *)&addr)[0]);
+    _SPI_WriteByte((uint8_t)addr), addr >>= 8;
+    _SPI_WriteByte((uint8_t)addr), addr >>= 8;
+    _SPI_WriteByte((uint8_t)addr), addr >>= 8;
+    _SPI_WriteByte((uint8_t)addr);
     NRF24L01_CS_HIGH();
 }
 
@@ -206,10 +206,10 @@ void NRF24L01_Rx_SetPipeAddr(uint8_t pipe_x, uint16_t _addr)
     {
         NRF24L01_CS_LOW();
         _SPI_WriteByte(_WR_OFFSET + NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
-        _SPI_WriteByte(((uint8_t *)&addr)[3]);
-        _SPI_WriteByte(((uint8_t *)&addr)[2]);
-        _SPI_WriteByte(((uint8_t *)&addr)[1]);
-        _SPI_WriteByte(((uint8_t *)&addr)[0]);
+        _SPI_WriteByte((uint8_t)addr), addr >>= 8;
+        _SPI_WriteByte((uint8_t)addr), addr >>= 8;
+        _SPI_WriteByte((uint8_t)addr), addr >>= 8;
+        _SPI_WriteByte((uint8_t)addr);
         NRF24L01_CS_HIGH();
     }
     else
