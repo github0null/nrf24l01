@@ -100,7 +100,7 @@ typedef struct
     uint8_t transferPower;    // 发射功率, NRF24L01_PWR_...
     uint8_t retryDelay;       // 重发延迟, 0~15, 延时时间: 250us * (retryDelay + 1)
     uint8_t retryTimes;       // 重发次数, 0~15 次
-    uint16_t networkId;        // 局域网络 ID, 用于区分不同的网络
+    uint16_t networkId;       // 局域网络 ID, 用于区分不同的网络
     NRF24L01_WriteByteCallBk writeDataCallBk;
 } NRF24L01_InitTypeDef;
 
@@ -115,8 +115,12 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *conf);
 /**
  * Switch NRF24L01 to TX or RX Mode
  * 
+ * nrf24l01 address structure (5 bytes): [ADDR_FIXED_PREFIX: 1 byte] [networkId: 2 bytes] [addr: 2 bytes]
+ * 
+ *                              example: 0xE70F010F02, (ADDR_FIXED_PREFIX == 0xE7, networkId == 0x0F01, addr == 0x0F02)
+ * 
  * @param mode NRF24L01 mode, like: NRF24L01_MODE_TX
- * @param addr target address(mode == NRF24L01_MODE_TX) or self address(mode == NRF24L01_MODE_RX)
+ * @param addr target address(mode == NRF24L01_MODE_TX) or rx address(mode == NRF24L01_MODE_RX)
 */
 void NRF24L01_SwitchMode(uint8_t mode, uint16_t addr);
 
