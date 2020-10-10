@@ -112,7 +112,7 @@ uint32_t _addr_prefix;
 
 // ======================== internal function ======================
 
-__STATIC_INLINE uint8_t _WriteCmd(uint8_t cmd)
+NRF24L01_INLINE uint8_t _WriteCmd(uint8_t cmd)
 {
     uint8_t res;
     NRF24L01_CS_LOW();
@@ -121,7 +121,7 @@ __STATIC_INLINE uint8_t _WriteCmd(uint8_t cmd)
     return res;
 }
 
-__STATIC_INLINE void _WriteReg(uint8_t addr, uint8_t dat)
+NRF24L01_INLINE void _WriteReg(uint8_t addr, uint8_t dat)
 {
     NRF24L01_CS_LOW();
     _SPI_WriteByte(_WR_OFFSET | addr);
@@ -129,7 +129,7 @@ __STATIC_INLINE void _WriteReg(uint8_t addr, uint8_t dat)
     NRF24L01_CS_HIGH();
 }
 
-__STATIC_INLINE uint8_t _ReadReg(uint8_t addr)
+NRF24L01_INLINE uint8_t _ReadReg(uint8_t addr)
 {
     uint8_t dat;
     NRF24L01_CS_LOW();

@@ -44,8 +44,8 @@ extern "C" {
 //==================== global config ====================
 
 // inline keyword
-#ifndef __STATIC_INLINE
-#define __STATIC_INLINE
+#ifndef NRF24L01_INLINE
+#define NRF24L01_INLINE
 #endif
 
 // wait timeout
