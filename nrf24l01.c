@@ -107,7 +107,8 @@
 NRF24L01_WriteByteCallBk _SPI_WriteByte;
 uint32_t _addr_prefix;
 
-#define _ADDR_PREFIX _addr_prefix
+#define ADDR_FIXED_PREFIX 0xe7
+#define ADDR_PREFIX _addr_prefix
 
 // ======================== internal function ======================
 
@@ -146,7 +147,7 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
     uint8_t tmp;
 
     _SPI_WriteByte = configInfo->writeDataCallBk;
-    _addr_prefix = ((uint32_t)configInfo->netId) << 16;
+    _addr_prefix = ((uint32_t)configInfo->networkId) << 16;
     configInfo->retryDelay &= 0x0f;
     configInfo->retryTimes &= 0x0f;
 
@@ -164,7 +165,7 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
 #endif
 
     _WriteReg(NRF24L01_CONFIG_REG, tmp);                                                          // config nrf24l01
-    _WriteReg(NRF24L01_ADDR_WIDTH_REG, NRF24L01_ADDR_WIDTH_4BYTE);                                // 地址宽度 4 byte
+    _WriteReg(NRF24L01_ADDR_WIDTH_REG, NRF24L01_ADDR_WIDTH_5BYTE);                                // 地址宽度 5 byte
     _WriteReg(NRF24L01_AUTO_ACK_REG, 0x00);                                                       // 关闭所有自动应答
     _WriteReg(NRF24L01_RX_PIPE_EN_REG, 0x00);                                                     // 关闭所有管道
     _WriteReg(NRF24L01_RETRY_CONFIG_REG, (configInfo->retryDelay << 4) | configInfo->retryTimes); // 设置重发配置
@@ -187,7 +188,7 @@ uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
 
 void NRF24L01_Tx_SetTargetAddr(uint16_t _addr)
 {
-    uint32_t addr = _ADDR_PREFIX | _addr;
+    uint32_t addr = ADDR_PREFIX | _addr;
 
     NRF24L01_CS_LOW();
     _SPI_WriteByte(_WR_OFFSET + NRF24L01_TX_ADDR_REG);
@@ -195,12 +196,13 @@ void NRF24L01_Tx_SetTargetAddr(uint16_t _addr)
     _SPI_WriteByte((uint8_t)addr), addr >>= 8;
     _SPI_WriteByte((uint8_t)addr), addr >>= 8;
     _SPI_WriteByte((uint8_t)addr);
+    _SPI_WriteByte((uint8_t)ADDR_FIXED_PREFIX);
     NRF24L01_CS_HIGH();
 }
 
 void NRF24L01_Rx_SetPipeAddr(uint8_t pipe_x, uint16_t _addr)
 {
-    uint32_t addr = _ADDR_PREFIX | _addr;
+    uint32_t addr = ADDR_PREFIX | _addr;
 
     if (pipe_x < 2)
     {
@@ -210,6 +212,7 @@ void NRF24L01_Rx_SetPipeAddr(uint8_t pipe_x, uint16_t _addr)
         _SPI_WriteByte((uint8_t)addr), addr >>= 8;
         _SPI_WriteByte((uint8_t)addr), addr >>= 8;
         _SPI_WriteByte((uint8_t)addr);
+        _SPI_WriteByte((uint8_t)ADDR_FIXED_PREFIX);
         NRF24L01_CS_HIGH();
     }
     else
