@@ -36,6 +36,7 @@ extern "C" {
 #error "NRF24L01_EN_LOW() must be defined !"
 #endif
 
+// whether use external interrupt
 #ifdef NRF24L01_USE_IT
 
 /**
