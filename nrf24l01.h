@@ -1,3 +1,9 @@
+/**
+ * @author github0null
+ * @version 1.0
+ * @see https://github.com/github0null/
+*/
+
 #ifndef _H_NRF24L01
 #define _H_NRF24L01
 
@@ -6,24 +12,26 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+
+//////////////////////////////////////////////////////////////////
+//                     user interface
+//////////////////////////////////////////////////////////////////
+
+// user must provide a 'nrf24l01_conf.h' header file
 #include <nrf24l01_conf.h>
 
-//==================== user interface ====================
-
-// SPI Chip Select
+// spi chip select pin
 #ifndef NRF24L01_CS_HIGH
 #error "NRF24L01_CS_HIGH() must be defined !"
 #endif
-
 #ifndef NRF24L01_CS_LOW
 #error "NRF24L01_CS_LOW() must be defined !"
 #endif
 
-// Chip Enable
+// nrf24l01 chip select pin
 #ifndef NRF24L01_EN_HIGH
 #error "NRF24L01_EN_HIGH() must be defined !"
 #endif
-
 #ifndef NRF24L01_EN_LOW
 #error "NRF24L01_EN_LOW() must be defined !"
 #endif
@@ -41,7 +49,10 @@ extern "C" {
 
 #endif
 
-//==================== global config ====================
+//////////////////////////////////////////////////////////////////
+//                      global config
+//        you can override these in 'nrf24l01_conf.h'
+//////////////////////////////////////////////////////////////////
 
 // inline keyword
 #ifndef NRF24L01_INLINE
@@ -63,13 +74,9 @@ extern "C" {
 #define NRF24L01_PACKET_SIZE 32
 #endif
 
-//==================== exit code type ====================
-
-#define NRF24L01_CODE_DONE 0
-#define NRF24L01_CODE_FAILED 1
-#define NRF24L01_CODE_TIMEOUT 2
-
-//==================== init config options ====================
+//////////////////////////////////////////////////////////////////
+//                NRF24L01_InitTypeDef options
+//////////////////////////////////////////////////////////////////
 
 // transmission speed
 #define NRF24L01_SPEED_1Mbps 0x00
@@ -87,7 +94,9 @@ extern "C" {
 #define NRF24L01_MODE_TX 0x00
 #define NRF24L01_MODE_RX 0x01
 
-//==================== type define ====================
+//////////////////////////////////////////////////////////////////
+//                       type define
+//////////////////////////////////////////////////////////////////
 
 typedef uint8_t (*NRF24L01_WriteByteCallBk)(uint8_t);
 
@@ -103,6 +112,18 @@ typedef struct
     uint16_t networkId;       // network ID. Used to identify different networks
     NRF24L01_WriteByteCallBk writeDataCallBk;
 } NRF24L01_InitTypeDef;
+
+//////////////////////////////////////////////////////////////////
+//                 NRF24L01 API return code
+//////////////////////////////////////////////////////////////////
+
+#define NRF24L01_CODE_DONE 0
+#define NRF24L01_CODE_FAILED 1
+#define NRF24L01_CODE_TIMEOUT 2
+
+//////////////////////////////////////////////////////////////////
+//                       NRF24L01 API
+//////////////////////////////////////////////////////////////////
 
 /**
  * Initialize NRF24L01

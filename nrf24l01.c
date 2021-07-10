@@ -1,7 +1,18 @@
+/**
+ * @author github0null
+ * @version 1.0
+ * @see https://github.com/github0null/
+*/
+
 #include "nrf24l01.h"
 
-//----------------------寄存器地址----------------------
-//只能在 Shutdown、Standby 和 Idle-TX 模式下才能对寄存器进行配置
+////////////////////////////////////////////////////////////////////////
+//
+//                          寄存器地址
+//
+//   只能在 Shutdown、Standby 和 Idle-TX 模式下才能对寄存器进行配置
+//
+////////////////////////////////////////////////////////////////////////
 
 #define NRF24L01_CONFIG_REG 0x00           //配置寄存器
 #define NRF24L01_CONFIG_IT_RX_EN 0x00      //开启接收中断
@@ -16,38 +27,29 @@
 #define NRF24L01_CONFIG_PWR_EN 0x02
 #define NRF24L01_CONFIG_MODE_TX 0x00
 #define NRF24L01_CONFIG_MODE_RX 0x01
-
 #define NRF24L01_CONFIG_MODE_MASK 0x01
 
-//--------------------------------------
+// 使能自动ACK, 位[0:5], Enable: 1, Disable: 0
+#define NRF24L01_AUTO_ACK_REG 0x01
 
-#define NRF24L01_AUTO_ACK_REG 0x01 // 使能自动ACK, 位[0:5], Enable: 1, Disable: 0
+// 使能接收管道, 位[0:5], Enable: 1, Disable: 0
+#define NRF24L01_RX_PIPE_EN_REG 0x02
 
-//----------------------------------------
-
-#define NRF24L01_RX_PIPE_EN_REG 0x02 // 使能接收管道, 位[0:5], Enable: 1, Disable: 0
-
-//------------------------------------------
-
-#define NRF24L01_ADDR_WIDTH_REG 0x03 // 地址宽度配置
+// 地址宽度配置
+#define NRF24L01_ADDR_WIDTH_REG 0x03
 #define NRF24L01_ADDR_WIDTH_3BYTE 0x01
 #define NRF24L01_ADDR_WIDTH_4BYTE 0x02
 #define NRF24L01_ADDR_WIDTH_5BYTE 0x03
 
-//---------------------------------------------
-
-/**
- * 重发延迟和次数配置
- * 
- * 位[7:4]: 重发延时, (250 * (x+1))us,  x = 0~15
- * 位[3:0]: 重发次数, x 次,  x = 0~15
-*/
+// 重发延迟和次数配置
+// 位[7:4]: 重发延时, (250 * (x+1))us,  x = 0~15
+// 位[3:0]: 重发次数, x 次,  x = 0~15
 #define NRF24L01_RETRY_CONFIG_REG 0x04
 
-//----------------------------------------------
+// 信道频段, 2400MHz + x, x: 最大值 125
+#define NRF24L01_RF_CHANNAL_REG 0x05
 
-#define NRF24L01_RF_CHANNAL_REG 0x05 // 信道频段, 2400MHz + x, x: 最大值 125
-
+// 射频配置
 #define NRF24L01_RF_CONFIG_REG 0x06
 #define NRF24L01_RF_CONFIG_CONST_WAVE_EN 0x80 // 恒载波发射模式
 #define NRF24L01_RF_CONFIG_SPEED_1Mbps 0x00   // 数据传输速度 1Mbps
@@ -59,9 +61,8 @@
 #define NRF24L01_RF_CONFIG_PWR_1dBm 0x04
 #define NRF24L01_RF_CONFIG_PWR_0dBm 0x03
 
-//---------------------------------------------
-
-#define NRF24L01_STATUS_REG 0x07 // 状态寄存器
+// 状态寄存器
+#define NRF24L01_STATUS_REG 0x07
 #define NRF24L01_STATUS_RX_DAT_READY 0x40
 #define NRF24L01_STATUS_TX_SEND_DONE 0x20
 #define NRF24L01_STATUS_TX_MAX_RETRY 0x10
@@ -69,31 +70,28 @@
 #define NRF24L01_STATUS_RX_PIPE_NUMBER 0x0E
 #define NRF24L01_STATUS_TX_FIFO_FULL 0x01
 
-//-------------------------------------
-
 // 信号强度检测，小于 -60dBm 为 0, 否则为 1
 #define NRF24L01_SIGNAL_STRENGTH_REG 0x09
 
-//----------------------------------------------------
-
-//接收管道x的接收地址
+// 接收管道x的接收地址
 #define NRF24L01_RX_PIPEx_ADDR_REG(x) (0x0A + (x))
 
-//接收管道x的接收宽度
+// 接收管道x的接收宽度
 #define NRF24L01_RX_PIPEx_WIDTH_REG(x) (0x11 + (x))
 
-//发送的地址
+// 发送的地址
 #define NRF24L01_TX_ADDR_REG 0x10
 
-//---------------------------------------------
-
-#define NRF24L01_FIFO_STATUS_REG 0x17 //先入先出队列的状态寄存器
+// 先入先出队列的状态寄存器
+#define NRF24L01_FIFO_STATUS_REG 0x17
 #define NRF24L01_FIFO_STATUS_TX_FULL 0x20
 #define NRF24L01_FIFO_STATUS_TX_EMPTY 0x10
 #define NRF24L01_FIFO_STATUS_RX_FULL 0x02
 #define NRF24L01_FIFO_STATUS_RX_EMPTY 0x01
 
-// ===============================================================
+////////////////////////////////////////////////////////////////////////
+//                 Internal variables, functions ...
+////////////////////////////////////////////////////////////////////////
 
 #define _WR_OFFSET 0x20
 
@@ -104,49 +102,49 @@
 #define _FIFO_WRITE_ADDR 0xA0
 #define _FIFO_READ_ADDR 0x61
 
-NRF24L01_WriteByteCallBk _SPI_WriteByte;
-uint32_t _addr_prefix;
+static NRF24L01_WriteByteCallBk _spi_write_byte;
+static uint32_t _addr_prefix;
 
 #define ADDR_FIXED_PREFIX 0xe7
 #define ADDR_PREFIX _addr_prefix
 
-// ======================== internal function ======================
-
-NRF24L01_INLINE uint8_t _WriteCmd(uint8_t cmd)
+static NRF24L01_INLINE uint8_t _WriteCmd(uint8_t cmd)
 {
     uint8_t res;
     NRF24L01_CS_LOW();
-    res = _SPI_WriteByte(cmd);
+    res = _spi_write_byte(cmd);
     NRF24L01_CS_HIGH();
     return res;
 }
 
-NRF24L01_INLINE void _WriteReg(uint8_t addr, uint8_t dat)
+static NRF24L01_INLINE void _WriteReg(uint8_t addr, uint8_t dat)
 {
     NRF24L01_CS_LOW();
-    _SPI_WriteByte(_WR_OFFSET | addr);
-    _SPI_WriteByte(dat);
+    _spi_write_byte(_WR_OFFSET | addr);
+    _spi_write_byte(dat);
     NRF24L01_CS_HIGH();
 }
 
-NRF24L01_INLINE uint8_t _ReadReg(uint8_t addr)
+static NRF24L01_INLINE uint8_t _ReadReg(uint8_t addr)
 {
     uint8_t dat;
     NRF24L01_CS_LOW();
-    _SPI_WriteByte(addr);
-    dat = _SPI_WriteByte(0);
+    _spi_write_byte(addr);
+    dat = _spi_write_byte(0);
     NRF24L01_CS_HIGH();
     return dat;
 }
 
-//==================================================
+////////////////////////////////////////////////////////////////////////
+//                         NRF24L01 API
+////////////////////////////////////////////////////////////////////////
 
 uint8_t NRF24L01_Init(NRF24L01_InitTypeDef *configInfo)
 {
     int8_t i;
     uint8_t tmp;
 
-    _SPI_WriteByte = configInfo->writeDataCallBk;
+    _spi_write_byte = configInfo->writeDataCallBk;
     _addr_prefix = ((uint32_t)configInfo->networkId) << 16;
     configInfo->retryDelay &= 0x0f;
     configInfo->retryTimes &= 0x0f;
@@ -196,12 +194,12 @@ void NRF24L01_Tx_SetTargetAddr(uint16_t _addr)
     uint32_t addr = ADDR_PREFIX | _addr;
 
     NRF24L01_CS_LOW();
-    _SPI_WriteByte(_WR_OFFSET + NRF24L01_TX_ADDR_REG);
-    _SPI_WriteByte((uint8_t)addr), addr >>= 8;
-    _SPI_WriteByte((uint8_t)addr), addr >>= 8;
-    _SPI_WriteByte((uint8_t)addr), addr >>= 8;
-    _SPI_WriteByte((uint8_t)addr);
-    _SPI_WriteByte((uint8_t)ADDR_FIXED_PREFIX);
+    _spi_write_byte(_WR_OFFSET + NRF24L01_TX_ADDR_REG);
+    _spi_write_byte((uint8_t)addr), addr >>= 8;
+    _spi_write_byte((uint8_t)addr), addr >>= 8;
+    _spi_write_byte((uint8_t)addr), addr >>= 8;
+    _spi_write_byte((uint8_t)addr);
+    _spi_write_byte((uint8_t)ADDR_FIXED_PREFIX);
     NRF24L01_CS_HIGH();
 }
 
@@ -212,12 +210,12 @@ void NRF24L01_Rx_SetPipeAddr(uint8_t pipe_x, uint16_t _addr)
     if (pipe_x < 2)
     {
         NRF24L01_CS_LOW();
-        _SPI_WriteByte(_WR_OFFSET + NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
-        _SPI_WriteByte((uint8_t)addr), addr >>= 8;
-        _SPI_WriteByte((uint8_t)addr), addr >>= 8;
-        _SPI_WriteByte((uint8_t)addr), addr >>= 8;
-        _SPI_WriteByte((uint8_t)addr);
-        _SPI_WriteByte((uint8_t)ADDR_FIXED_PREFIX);
+        _spi_write_byte(_WR_OFFSET + NRF24L01_RX_PIPEx_ADDR_REG(pipe_x));
+        _spi_write_byte((uint8_t)addr), addr >>= 8;
+        _spi_write_byte((uint8_t)addr), addr >>= 8;
+        _spi_write_byte((uint8_t)addr), addr >>= 8;
+        _spi_write_byte((uint8_t)addr);
+        _spi_write_byte((uint8_t)ADDR_FIXED_PREFIX);
         NRF24L01_CS_HIGH();
     }
     else
@@ -292,9 +290,9 @@ uint8_t NRF24L01_SendPacket(NRF24L01_Buffer buffer)
     // put data and send
     NRF24L01_EN_LOW();
     NRF24L01_CS_LOW();
-    _SPI_WriteByte(_FIFO_WRITE_ADDR);
+    _spi_write_byte(_FIFO_WRITE_ADDR);
     for (tmp = 0; tmp < NRF24L01_PACKET_SIZE; tmp++)
-        _SPI_WriteByte(buffer[tmp]);
+        _spi_write_byte(buffer[tmp]);
     NRF24L01_CS_HIGH();
     NRF24L01_EN_HIGH();
 
@@ -342,9 +340,9 @@ int8_t NRF24L01_ReceivePacket(NRF24L01_Buffer buffer)
         if (pipex < 6)
         {
             NRF24L01_CS_LOW();
-            _SPI_WriteByte(_FIFO_READ_ADDR);
+            _spi_write_byte(_FIFO_READ_ADDR);
             for (tmp = 0; tmp < NRF24L01_PACKET_SIZE; tmp++)
-                buffer[tmp] = _SPI_WriteByte(0);
+                buffer[tmp] = _spi_write_byte(0);
             NRF24L01_CS_HIGH();
         }
         else
